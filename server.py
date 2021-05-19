@@ -40,12 +40,15 @@ class Castaways(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
     hometown = db.Column(db.String(50))
+    days_lasted = db.Column(db.Integer)
+    challenge_wins = db.Column(db.Integer)
     seasons = db.relationship('Seasons', secondary=season_castaway, backref=db.backref('castaways_in_season', lazy='dynamic'))
     tribes = db.relationship('Tribes', secondary=tribe_castaway, backref=db.backref('castaways_in_tribe', lazy='dynamic'))     
 
 class Seasons(db.Model):
     __tablename__ = "Seasons"
     season_number = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40))
     location = db.Column(db.String(50))
     filming_period = db.Column(db.String(50))
     season_run_period = db.Column(db.String(50))
