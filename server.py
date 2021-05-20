@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify
 # app
 app = Flask(__name__)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///survivordb.file"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///survivordb.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = 0
 
 # configure sqlite3 to enforce foreign key constraints
@@ -50,10 +50,9 @@ class Seasons(db.Model):
     season_number = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(40))
     location = db.Column(db.String(50))
-    filming_period = db.Column(db.String(50))
-    season_run_period = db.Column(db.String(50))
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
     num_episodes = db.Column(db.Integer)
-    num_days = db.Column(db.Integer)
     num_castaways = db.Column(db.Integer)
     tribes = db.relationship("Tribes", cascade="all,delete")
 
@@ -63,7 +62,7 @@ class Tribes(db.Model):
     tribe_name = db.Column(db.String(40))
     tribe_type = db.Column(db.String(30))
     season = db.Column(db.Integer, db.ForeignKey("Seasons.season_number"))
-    challenge_wins = db.Column(db.Integer)
+    challenge_wins = db.Column(db.String(10))
 
 # season1 = Seasons(location="Borneo", filming_period="June 27th,2001-August 30th, 2001", season_run_period="time", num_episodes=14, num_days=30, num_castaways=14)
 # season2 = Seasons(location="Australia", filming_period="June 27th,2001-August 30th, 2001", season_run_period="time", num_episodes=14, num_days=30, num_castaways=14)
