@@ -1,11 +1,7 @@
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
 from datetime import date, datetime
 from server import *
+import re
 
 # db.create_all()
 
@@ -143,42 +139,52 @@ def get_tribe_info():
                         tribe_url += char
             else:
                 tribe_url = tribe
+            
             driver.get('https://survivor.fandom.com/wiki/{}'.format(tribe_url))
+            
             tribe_type = driver.find_element_by_xpath('//*[@id="mw-content-text"]/div/aside/section[1]/div[4]/div').text.lower()
             if tribe_type == 'merged tribe':
                 challenge_wins = 'N/A'
             else:
                 challenge_wins = driver.find_element_by_xpath('//*[@id="mw-content-text"]/div/aside/section[1]/div[8]/div').text
             
+            # add tribe to the database
             survivor_tribe = Tribes(tribe_name=tribe, tribe_type=tribe_type, season=i, challenge_wins=challenge_wins)
             db.session.add(survivor_tribe)
             db.session.commit()
 
-            tribe_members_table = driver.find_element_by_tag_name('table')
-            table_rows = []
-            for l in range(1, 5):
-                try:
-                    row = driver.find_element_by_xpath('//*[@id="mw-content-text"]/div/table[1]/tbody/tr[{}]'.format(l))
-                    table_rows.append(row)
-                except:
-                    break
+            # find all the members of the tribe
 
-            for j in range(1, (len(table_rows) + 1)):
-                data_cells = []
-                for k in range(1, 6):
-                    try:
-                        cell = driver.find_element_by_xpath('//*[@id="mw-content-text"]/div/table[1]/tbody/tr[{}]/td[{}]'.format(j, k))
-                        data_cells.append(cell)
-                    except:
-                        break
-                for m in range(1, (len(data_cells) + 1)):
-                    name = data_cells[(m - 1)].find_element_by_xpath('//*[@id="mw-content-text"]/div/table[1]/tbody/tr[{}]/td[{}]/table/tbody/tr/td/div/div[1]/table/tbody/tr[1]/td/a/font/b'.format(j, m)).text
-                    member = Castaways.query.filter_by(name=name).first()
-                    survivor_tribe.castaways_in_tribe.append(member)
-                    db.session.commit()
+            driver.get("https://survivor.fandom.com/wiki/{}?action=edit".format(tribe_url))
+            textarea = driver.find_element_by_tag_name('textarea').text
 
+            mem_index = textarea.find("==Members==")
+            hist_index = textarea.find("==Tribe History==")
+            members_text = textarea[mem_index:hist_index]
+            day = members_text.find('Day')
+
+            if day != -1:
+                members_text = members_text[:day]
+
+            name_quotes = [a.start() for a in re.finditer("'''", members_text)]
+
+            tribe_names = []
+
+            for b in range(0, len(name_quotes), 2):
+                name = members_text[(name_quotes[b] + 3):name_quotes[b+1]]
+                if name == 'Susan  Hawk':
+                    name = 'Susan Hawk'
+                tribe_names.append(name)
+                member = Castaways.query.filter_by(name=name).first()
+                # add member to this tribe's linking table
+                survivor_tribe.castaways_in_tribe.append(member)
+                db.session.commit()
+
+# get_survivors()
+# get_seasons()
 get_tribe_info()
     
+
 
 
 driver.quit()

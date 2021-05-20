@@ -64,27 +64,6 @@ class Tribes(db.Model):
     season = db.Column(db.Integer, db.ForeignKey("Seasons.season_number"))
     challenge_wins = db.Column(db.String(10))
 
-# season1 = Seasons(location="Borneo", filming_period="June 27th,2001-August 30th, 2001", season_run_period="time", num_episodes=14, num_days=30, num_castaways=14)
-# season2 = Seasons(location="Australia", filming_period="June 27th,2001-August 30th, 2001", season_run_period="time", num_episodes=14, num_days=30, num_castaways=14)
-# season3 = Seasons(location="Africa", filming_period="June 27th,2001-August 30th, 2001", season_run_period="time", num_episodes=14, num_days=30, num_castaways=14)
-# season4 = Seasons(location="Marquesas", filming_period="June 27th,2001-August 30th, 2001", season_run_period="time", num_episodes=14, num_days=30, num_castaways=14)
-
-# castaway1 = Castaways(name="Richard Hatch", num_seasons=2, occupation="Corporate Trainer", challenge_wins=0, days_lasted=40, votes_against=5)
-# castaway2 = Castaways(name="Sue Hawkings", num_seasons=2, occupation="Corporate Trainer", challenge_wins=0, days_lasted=40, votes_against=5)
-# castaway3 = Castaways(name="Kelly Wiglesworth", num_seasons=2, occupation="Corporate Trainer", challenge_wins=0, days_lasted=40, votes_against=5)
-
-# db.create_all()
-
-# db.session.add(season1)
-# db.session.add(season2)
-# db.session.add(season3)
-# db.session.add(season4)
-# db.session.add(castaway1)
-# db.session.add(castaway2)
-# db.session.add(castaway3)
-# season1.castaways_in_season.append(castaway1)
-# db.session.commit()
-
 
 
 
