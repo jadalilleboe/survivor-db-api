@@ -26,8 +26,8 @@ def get_survivors():
         name = th.text
         td = row.find_elements_by_tag_name('td')
         
+        age = td[2].text
         hometown = td[3].text
-        placement = td[5].text
         days_lasted = int(td[6].text)
         
         challenge_wins = td[9].text
@@ -42,7 +42,7 @@ def get_survivors():
             castaway.challenge_wins += challenge_wins
         else:
             names.append(name)
-            survivor = Castaways(name=name, hometown=hometown, days_lasted=days_lasted, challenge_wins=challenge_wins)
+            survivor = Castaways(name=name, hometown=hometown, age_at_recording=age, days_lasted=days_lasted, challenge_wins=challenge_wins)
             db.session.add(survivor)
             db.session.commit()
 
@@ -87,13 +87,63 @@ def get_seasons():
         num_episodes = int(values[5].text)
         num_castaways = int(values[7].text[:2])
 
-        # //*[@id="mw-content-text"]/div/aside/section[1]/div[11]/div
-
         season = Seasons(name=name, location=location, start_date=start_date, end_date=end_date, num_episodes=num_episodes, num_castaways=num_castaways)
         db.session.add(season)
         db.session.commit()
         
         driver.implicitly_wait(5)
+
+def get_season_castaway():
+    seasons = Seasons.query.all()
+    for season in seasons:
+        if ' ' in season.name:
+            season_url = ''
+            for char in season.name:
+                if char == ' ':
+                    season_url += '_'
+                else:
+                    season_url += char
+        else:
+            season_url = season.name
+        
+        driver.get("https://survivor.fandom.com/wiki/Survivor:_{}?action=edit".format(season_url))
+        textarea = driver.find_element_by_tag_name('textarea').text
+        cast_index = textarea.find("==Castaways==")
+        summary_index = textarea.find("==Season Summary==")
+
+        castaway_text = textarea[cast_index:summary_index]
+        tribe_boxes = [a.start() for a in re.finditer("tribebox2", castaway_text)]
+        tribe_box_slices = []
+        
+        for i in range(len(tribe_boxes)):
+            if i == (len(tribe_boxes) - 1):
+                tribe_box = castaway_text[tribe_boxes[i]:]
+            else:
+                tribe_box = castaway_text[tribe_boxes[i]:tribe_boxes[i+1]]
+            tribe_box_slices.append(tribe_box)
+        
+        tribe_box_slices.reverse()
+
+        for i in tribe_box_slices:
+            print(i.find("'''"))
+            if i.find("'''") == -1:
+                tribe_box_slices.remove(i)
+
+        if season.season_number == 38:
+            tribe_box_slices.pop(17)
+        
+        for i in range(len(tribe_box_slices)):
+            if season.season_number == 2 and i == 11:
+                name = 'Kimmi Kappenberg'
+            else:
+                name_indices = [a.start() for a in re.finditer("'''", tribe_box_slices[i])]
+                name = tribe_box_slices[i][(name_indices[0] + 5):(name_indices[1] - 2)]
+            castaway = Castaways.query.filter_by(name=name).first()
+            placement = (i + 1)
+            seasoncastaway = SeasonCastaway(season_number=season.season_number, castaway_id=castaway.id, placement=placement)
+            db.session.add(seasoncastaway)
+            db.session.commit()
+
 
 def get_tribes():
     driver.get("https://survivor.fandom.com/wiki/Survivor:_Borneo")
@@ -119,10 +169,7 @@ def get_tribes():
     return tribe_dict
 
 def get_tribe_info():
-    # tribes = get_tribes()
-    tribes = {1: ['Pagong', 'Tagi', 'Rattana'], 2: ['Kucha', 'Ogakor', 'Barramundi'], 3: ['Boran', 'Samburu', 'Moto Maji'], 4: ['Maraamu', 'Rotu', 'Soliantu'], 5: ['Chuay Gahn', 'Sook Jai', 'Chuay Jai'], 6: ['Jaburu', 'Tambaqui', 'Jacaré'], 7: ['Drake', 'Morgan', 'The Outcasts', 'Balboa'], 8: ['Chapera', 'Mogo Mogo', 'Saboga', 
-    'Chaboga Mogo'], 9: ['Lopevi', 'Yasur', 'Alinta'], 10: ['Koror', 'Ulong'], 11: ['Nakúm', 'Yaxhá', 'Xhakúm'], 12: ['Bayoneta', 'Casaya', 'La Mina', 'Viveros', 
-    'Gitanos'], 13: ['Aitutaki', 'Manihiki', 'Puka Puka', 'Rarotonga', 'Aitutonga'], 14: ['Moto', 'Ravu', 'Bula Bula'], 15: ['Fei Long', 'Zhan Hu', 'Hae Da Fung'], 16: ['Airai', 'Malakal', 'Dabu'], 17: ['Fang', 'Kota', 'Nobag'], 18: ['Jalapao', 'Timbira', 'Forza'], 19: ['Foa Foa', 'Galu', 'Aiga'], 20: ['Heroes', 'Villains', 'Yin Yang'], 21: ['Espada', 'La Flor', 'Libertad'], 22: ['Ometepe', 'Zapatera', 'Murlonio'], 23: ['Savaii', 'Upolu', 'Te Tuna'], 24: ['Manono', 'Salani', 'Tikiano'], 25: ['Kalabaw', 'Matsing', 'Tandang', 'Dangrayne'], 26: ['Bikal', 'Gota', 'Enil Edam'], 27: ['Galang', 'Tadhana', 'Kasama'], 28: ['Aparri', 'Luzon', 'Solana', 'Solarrion'], 29: ['Coyopa', 'Hunahpu', 'Huyopa'], 30: ['Escameca', 'Masaya', 'Nagarote', 'Merica'], 31: ['Bayon', 'Ta Keo', 'Angkor', 'Orkun'], 32: ['Chan Loh', 'Gondol', 'To Tang', 'Dara'], 33: ['Takali', 'Vanua', 'Ikabula', 'Vinaka'], 34: ['Mana', 'Nuku', 'Tavua', 'Maku Maku'], 35: ['Levu', 'Soko', 'Yawa', 'Solewa'], 36: ['Malolo', 'Naviti', 'Yanuya', 'Lavita'], 37: ['David/Vuku', 'Goliath/Jabeni', 'Tiva', 'Kalokalo'], 38: ['Kama', 'Manu', 'Lesu', 'Vata'], 39: ['Lairo', 'Vokai', 'Lumuwaku'], 40: ['Dakal', 'Sele', 'Yara', 'Koru']}
+    tribes = get_tribes()
     
     for i in range(1, 41):
         season_tribes = tribes[i]
@@ -180,11 +227,9 @@ def get_tribe_info():
                 survivor_tribe.castaways_in_tribe.append(member)
                 db.session.commit()
 
-# get_survivors()
-# get_seasons()
+get_survivors()
+get_seasons()
+get_season_castaway()
 get_tribe_info()
-    
-
-
 
 driver.quit()

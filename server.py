@@ -23,11 +23,12 @@ db = SQLAlchemy(app)
 # models
 
 # helper tables
-season_castaway = db.Table('SeasonCastaway',
-    db.Column('season_number', db.Integer, db.ForeignKey('Seasons.season_number')),
-    db.Column('castaway_id', db.Integer, db.ForeignKey('Castaways.id')),
-    db.Column('placement', db.Integer)
-    )
+class SeasonCastaway(db.Model):
+    __tablename__ = "SeasonCastaway"
+    id = db.Column(db.Integer, primary_key=True)
+    season_number = db.Column(db.Integer, db.ForeignKey('Seasons.season_number'))
+    castaway_id = db.Column(db.Integer, db.ForeignKey('Castaways.id'))
+    placement = db.Column(db.String(40))
 
 tribe_castaway = db.Table('TribeCastaway',
     db.Column('castaway_id', db.Integer, db.ForeignKey('Castaways.id')),
@@ -40,9 +41,10 @@ class Castaways(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
     hometown = db.Column(db.String(50))
+    age_at_recording = db.Column(db.Integer)
     days_lasted = db.Column(db.Integer)
     challenge_wins = db.Column(db.Integer)
-    seasons = db.relationship('Seasons', secondary=season_castaway, backref=db.backref('castaways_in_season', lazy='dynamic'))
+    # seasons = db.relationship('Seasons', backref=db.backref('castaways_in_season', lazy='dynamic'))
     tribes = db.relationship('Tribes', secondary=tribe_castaway, backref=db.backref('castaways_in_tribe', lazy='dynamic'))     
 
 class Seasons(db.Model):
