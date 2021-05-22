@@ -144,7 +144,6 @@ def get_season_castaway():
             db.session.add(seasoncastaway)
             db.session.commit()
 
-
 def get_tribes():
     driver.get("https://survivor.fandom.com/wiki/Survivor:_Borneo")
     tribe_dict = {}

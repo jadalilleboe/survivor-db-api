@@ -66,6 +66,125 @@ class Tribes(db.Model):
     season = db.Column(db.Integer, db.ForeignKey("Seasons.season_number"))
     challenge_wins = db.Column(db.String(10))
 
+# castaway endpoints
+
+@app.route("/castaways", methods=["GET"])
+def get_all_castaways():
+    pass
+
+@app.route("/castaways/<castaway_name>", methods=["GET"])
+def get_one_castaway(castaway_name):
+    pass
+
+@app.route("/castaways/<castaway_name>/seasons", methods=["GET"])
+def get_one_castaways_seasons(castaway_name):
+    pass
+
+@app.route("/castways/challenge_wins", methods=["GET"])
+def castaways_ordered_by_challenge_wins():
+    pass
+
+@app.route("/castways/days_lasted", methods=["GET"])
+def castaways_ordered_by_days_lasted():
+    pass
+
+@app.route("/castways/age/ascending", methods=["GET"])
+def castaways_ordered_by_ascending_age():
+    pass
+
+@app.route("/castways/age/descending", methods=["GET"])
+def castaways_ordered_by_descending_age():
+    pass
+
+@app.route("/castaways/winners", methods=["GET"])
+def get_all_winners():
+    pass
+
+@app.route("/castaways/create", methods=["POST"])
+def create_castaway():
+    pass
+
+@app.route("/castaways/delete/<castaway_id>", methods=["DELETE"])
+def delete_castaway(castaway_id):
+    pass
+
+# season endpoints
+
+@app.route("/seasons", methods=["GET"])
+def get_all_seasons():
+    pass
+
+@app.route("/seasons/<season_number>/castaways", methods=["GET"])
+def get_all_of_seasons_castaways():
+    pass
+
+@app.route("/seasons/descending", methods=["GET"])
+def get_all_seasons_descending():
+    pass
+
+@app.route("/seasons/<season_number>", methods=["GET"])
+def get_one_season(season_number):
+    pass
+
+@app.route("/seasons/<season_name>", methods=["GET"])
+def get_one_season(season_name):
+    pass
+
+@app.route("/seasons/<season_number>/winner", methods=["GET"])
+def get_one_seasons_winner(season_number):
+    pass
+
+@app.route("/seasons/<season_number>/tribes", methods=["GET"])
+def get_one_seasons_tribes(season_number):
+    pass
+
+@app.route("/seasons/locations>", methods=["GET"])
+def get_all_locations():
+    pass
+
+@app.route("/seasons/create>", methods=["POST"])
+def create_season():
+    pass
+
+@app.route("/seasons/delete/<season_number>", methods=["DELETE"])
+def delete_season(season_number):
+    pass
+
+# tribe endpoints
+
+@app.route("/tribes", methods=["GET"])
+def get_all_tribes():
+    pass
+
+@app.route("/tribes/challenge_wins", methods=["GET"])
+def order_tribes_by_challenge_wins():
+    pass
+
+@app.route("/tribes/<tribe_name>", methods=["GET"])
+def get_one_tribe(tribe_name):
+    pass
+
+@app.route("/tribes/<season_number>", methods=["GET"])
+def get_all_tribes_from_a_season(season_number):
+    pass
+
+@app.route("/tribes/<tribe_name>/members", methods=["GET"])
+def get_tribe_members(tribe_name):
+    pass
+
+@app.route("/tribes/<tribe_name>/highest_placing", methods=["GET"])
+def get_highest_placing_member(tribe_name):
+    pass
+
+@app.route("/tribes/create", methods=["POST"])
+def create_tribe():
+    pass
+
+@app.route("/tribes/delete/<tribe_name>", methods=["GET"])
+def delete_tribe(tribe_name):
+    pass
+
+
 
 
 
