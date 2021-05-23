@@ -95,7 +95,7 @@ def get_seasons():
 
 def get_season_castaway():
     seasons = Seasons.query.all()
-    for season in seasons:
+    for season in seasons[:39]:
         if ' ' in season.name:
             season_url = ''
             for char in season.name:
@@ -125,7 +125,6 @@ def get_season_castaway():
         tribe_box_slices.reverse()
 
         for i in tribe_box_slices:
-            print(i.find("'''"))
             if i.find("'''") == -1:
                 tribe_box_slices.remove(i)
 
@@ -143,6 +142,32 @@ def get_season_castaway():
             seasoncastaway = SeasonCastaway(season_number=season.season_number, castaway_id=castaway.id, placement=placement)
             db.session.add(seasoncastaway)
             db.session.commit()
+
+def get_season40_castaways():
+    season = Seasons.query.filter_by(season_number=40).first()
+    driver.get("https://survivor.fandom.com/wiki/Survivor:_Winners_at_War?action=edit")
+
+    textarea = driver.find_element_by_tag_name('textarea').text
+
+    mem_index = textarea.find("==Castaways==")
+    summary_index = textarea.find("==Season Summary==")
+    castaway_text = textarea[mem_index:summary_index]
+
+    names = []
+
+    name_quotes = [a.start() for a in re.finditer("'''", castaway_text)]
+    for b in range(0, len(name_quotes), 2):
+        name = castaway_text[(name_quotes[b] + 5):(name_quotes[b+1] - 2)]
+        names.append(name)
+
+    names.reverse()
+
+    for i in range(len(names)):
+        castaway = Castaways.query.filter_by(name=names[i]).first()
+        placement = (i + 1)
+        seasoncastaway = SeasonCastaway(season_number=season.season_number, castaway_id=castaway.id, placement=placement)
+        db.session.add(seasoncastaway)
+        db.session.commit()
 
 def get_tribes():
     driver.get("https://survivor.fandom.com/wiki/Survivor:_Borneo")
@@ -226,9 +251,10 @@ def get_tribe_info():
                 survivor_tribe.castaways_in_tribe.append(member)
                 db.session.commit()
 
-get_survivors()
-get_seasons()
+# get_survivors()
+# get_seasons()
 get_season_castaway()
-get_tribe_info()
+get_season40_castaways()
+# get_tribe_info()
 
 driver.quit()
