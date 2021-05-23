@@ -158,7 +158,7 @@ def get_one_castaways_seasons(castaway_name):
     return jsonify(json_body), 200
 
     
-@app.route("/castways/challenge_wins", methods=["GET"])
+@app.route("/castaways/challenge_wins", methods=["GET"])
 def castaways_ordered_by_challenge_wins():
     '''
     Purpose:
@@ -180,75 +180,171 @@ def castaways_ordered_by_challenge_wins():
 
     return jsonify(json_body), 200
 
-@app.route("/castways/challenge_wins/<num>", methods=["GET"])
+@app.route("/castaways/challenge_wins/<num>", methods=["GET"])
 def number_of_challenge_wins(num):
     '''
     Purpose:
         Presents data about the castaways who have won a certain number of challenges (num).
     Input Parameter(s):
         num- 
-            A specified number of challenges won. /castaways/challenges/4 will return all of the castaways who have won exactly 4 challenges.
+            A specified number of challenges won. /castaways/challenges/4 will return all of the castaways who have won exactly 4 challenges throughout all of their time on survivor.
     Return Value:
         JSONified version of the data.
     '''
-    castaways = Castaways.query.filter_by(challenge_wins=int(num))
+    castaways = Castaways.query.filter_by(challenge_wins=int(num)).all()
+    # print(castaways)
 
     if not castaways:
-        pass
+        return jsonify({
+            "message": "No castaways found with that amount of challenge wins."
+        }), 400
+    
+    json_body = []
+    
+    for castaway in castaways:
+        json_body.append({
+            "name": castaway.name,
+            "challenge_wins": castaway.challenge_wins
+        })
+    
+    return jsonify(json_body), 200
 
-@app.route("/castways/days_lasted", methods=["GET"])
+
+@app.route("/castaways/days_lasted", methods=["GET"])
 def castaways_ordered_by_days_lasted():
     '''
     Purpose:
+        Order the castaways by the total number of days they've lasted on survivor. This total rolls over to any new season a castaway is on. Highest is at the top of list, and it goes down from there.
     Input Parameter(s):
+        None
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    castaways = Castaways.query.order_by(Castaways.days_lasted).all()
+    castaways.reverse()
 
-@app.route("/castways/age/ascending", methods=["GET"])
+    json_body = []
+
+    for castaway in castaways:
+        json_body.append({
+            "name": castaway.name,
+            "total_days_lasted": castaway.days_lasted
+        })
+    
+    return jsonify(json_body), 200
+
+@app.route("/castaways/age/ascending", methods=["GET"])
 def castaways_ordered_by_ascending_age():
     '''
     Purpose:
+        Order the castaways by age in ascending order. i.e The first castaway will be the youngest, and they will get older as we go down the list.
     Input Parameter(s):
+        None
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    castaways = Castaways.query.order_by(Castaways.age_at_recording).all()
+
+    json_body = []
+    for castaway in castaways:
+        json_body.append({
+            "name": castaway.name,
+            "age_on_first_season": castaway.age_at_recording
+        })
+    
+    return jsonify(json_body), 200
 
 @app.route("/castways/age/descending", methods=["GET"])
 def castaways_ordered_by_descending_age():
     '''
     Purpose:
+        Order the castaways by age in descending order. i.e The first castaway will be the oldest, and they will get younger as we go down the list.
     Input Parameter(s):
+        None
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    castaways = Castaways.query.order_by(Castaways.age_at_recording).all()
+    castaways.reverse()
+
+    json_body = []
+    for castaway in castaways:
+        json_body.append({
+            "name": castaway.name,
+            "age_on_first_season": castaway.age_at_recording
+        })
+    
+    return jsonify(json_body), 200
 
 @app.route("/castaways/winners", methods=["GET"])
 def get_all_winners():
     '''
     Purpose:
+        Display data on the winners of all seasons. Castaway name, season name, season number
     Input Parameter(s):
+        None
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    winners = SeasonCastaway.query.filter_by(placement=1)
+
+    json_body = []
+
+    for winner in winners:
+        castaway = Castaways.query.filter_by(id=winner.castaway_id).first()
+        season = Seasons.query.filter_by(season_number=winner.season_number).first()
+        json_body.append({
+            "name": castaway.name,
+            "season_number": winner.season_number,
+            "season_name": season.name
+        })
+
+    return jsonify(json_body), 200
 
 @app.route("/castaways/create", methods=["POST"])
 def create_castaway():
     '''
     Purpose:
+        Create a new castaway and store it in the database. This is for a NEW castaway, not a returning player. For updating a returning player's statistics, look to update_castaway().
     Input Parameter(s):
+        None, but the body of the request should include JSON of the following castaway attributes:
+            -Name of castaway
+            -Hometown
+            -Age
+            -Total days lasted
+            -Number of challenge wins
     Return Value:
+        Successful creation message
     '''
-    pass
+    data = request.get_json()
+    print(data["name"])
+    new_castaway = Castaways(
+        name=data["name"],
+        hometown=data["hometown"],
+        age_at_recording=data["age_at_recording"],
+        days_lasted=data["days_lasted"],
+        challenge_wins=data["challenge_wins"]
+    )
+    db.session.add(new_castaway)
+    db.session.commit()
+    return jsonify({"message": "castaway created successfully"})
 
-@app.route("/castaways/delete/<castaway_id>", methods=["DELETE"])
-def delete_castaway(castaway_id):
+@app.route("/castaways/delete/<castaway_name>", methods=["DELETE"])
+def delete_castaway(castaway_name):
     '''
     Purpose:
+        Delete a castaway from the database.
     Input Parameter(s):
+        The name of the castaway to remove.
     Return Value:
+        Successful deletion message.
     '''
-    pass
+    castaway_name = remove_underscores(castaway_name)
+    castaway = Castaways.query.filter_by(name=castaway_name).first()
+    db.session.delete(castaway)
+    db.session.commit()
+
+    return jsonify({"message": "castaway deleted successfully"})
 
 # season endpoints
 
@@ -256,28 +352,62 @@ def delete_castaway(castaway_id):
 def get_all_seasons():
     '''
     Purpose:
+        Fetches data on all of the seasons of survivor.
     Input Parameter(s):
+        None
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    seasons = Seasons.query.all()
+    json_body = []
+
+    for season in seasons:
+        json_body.append(get_season_info(season))
+    
+    return jsonify(json_body), 200
 
 @app.route("/seasons/<season_number>/castaways", methods=["GET"])
-def get_all_of_seasons_castaways():
+def get_all_of_seasons_castaways(season_number):
     '''
     Purpose:
+        Fetches all of the castaways in a given season
     Input Parameter(s):
+        The season number
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    castaways = SeasonCastaway.query.filter_by(season_number=season_number).all()
+    if not castaways:
+        return jsonify(season_not_found)
+    
+    json_body = []
+
+    for castaway in castaways:
+        castaway_info = Castaways.query.filter_by(id=castaway.castaway_id).first()
+        json_body.append({
+            "castaway_name": castaway_info.name,
+            "placement": castaway.placement 
+        })
+    return jsonify(json_body), 200
 
 @app.route("/seasons/descending", methods=["GET"])
 def get_all_seasons_descending():
     '''
     Purpose:
+        Fetches all seasons in a descending order. The first season in the list is the latest season, and the seasons get earlier and earlier as we go down the list.
     Input Parameter(s):
+        None
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    seasons = Seasons.query.all()
+    json_body = []
+
+    for season in seasons:
+        json_body.append(get_season_info(season))
+    json_body.reverse()
+    
+    return jsonify(json_body), 200
 
 @app.route("/seasons/<season_number>", methods=["GET"])
 def get_one_season_by_number(season_number):
