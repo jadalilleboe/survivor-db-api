@@ -3,6 +3,7 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, request, jsonify
+from datetime import date
 from api_functions import *
 
 # app
@@ -104,7 +105,6 @@ def get_all_castaways_ascending():
     
     return jsonify(json_body), 200
         
-
 @app.route("/castaways/<castaway_name>", methods=["GET"])
 def get_one_castaway(castaway_name):
     '''
@@ -123,7 +123,6 @@ def get_one_castaway(castaway_name):
     
     return jsonify(get_castaway_info(castaway)), 200
     
-
 @app.route("/castaways/<castaway_name>/seasons", methods=["GET"])
 def get_one_castaways_seasons(castaway_name):
     '''
@@ -157,7 +156,6 @@ def get_one_castaways_seasons(castaway_name):
     
     return jsonify(json_body), 200
 
-    
 @app.route("/castaways/challenge_wins", methods=["GET"])
 def castaways_ordered_by_challenge_wins():
     '''
@@ -208,7 +206,6 @@ def number_of_challenge_wins(num):
         })
     
     return jsonify(json_body), 200
-
 
 @app.route("/castaways/days_lasted", methods=["GET"])
 def castaways_ordered_by_days_lasted():
@@ -341,6 +338,8 @@ def delete_castaway(castaway_name):
     '''
     castaway_name = remove_underscores(castaway_name)
     castaway = Castaways.query.filter_by(name=castaway_name).first()
+    if not castaway:
+        return jsonify(castaway_not_found), 400
     db.session.delete(castaway)
     db.session.commit()
 
@@ -378,7 +377,7 @@ def get_all_of_seasons_castaways(season_number):
     '''
     castaways = SeasonCastaway.query.filter_by(season_number=season_number).all()
     if not castaways:
-        return jsonify(season_not_found)
+        return jsonify(season_not_found), 400
     
     json_body = []
 
@@ -413,64 +412,144 @@ def get_all_seasons_descending():
 def get_one_season_by_number(season_number):
     '''
     Purpose:
+        Get data on one season by its season number.
     Input Parameter(s):
+        Number of the season
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    season = Seasons.query.filter_by(season_number=season_number).first()
+    if not season:
+        return jsonify(season_not_found), 400
+    
+    return jsonify(get_season_info(season)), 200
 
-@app.route("/seasons/<season_name>", methods=["GET"])
+@app.route("/seasons/name/<season_name>", methods=["GET"])
 def get_one_season_by_name(season_name):
     '''
     Purpose:
+        Get data on one season by its season name.
     Input Parameter(s):
+        Name of the season
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    season = Seasons.query.filter_by(name=season_name).first()
+    if not season:
+        return jsonify(season_not_found), 400
+    
+    return jsonify(get_season_info(season)), 200
 
 @app.route("/seasons/<season_number>/winner", methods=["GET"])
 def get_one_seasons_winner(season_number):
     '''
     Purpose:
+        Gets the winner of one season.
     Input Parameter(s):
+        The number of the season.
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    seasoncastaway = SeasonCastaway.query.filter_by(season_number=season_number, placement=1).first()
+    if not seasoncastaway:
+        return jsonify(season_not_found), 400
+    winner = Castaways.query.filter_by(id=seasoncastaway.castaway_id).first()
+
+    return jsonify({
+        "winner_name": winner.name,
+        "season_number": season_number
+        }), 200
 
 @app.route("/seasons/<season_number>/tribes", methods=["GET"])
 def get_one_seasons_tribes(season_number):
     '''
     Purpose:
+        Get all of the tribes for a season.
     Input Parameter(s):
+        The number of the season.
     Return Value:
+        JSONified version of the data.
     '''
-    pass
+    tribes = Tribes.query.filter_by(season=season_number).all()
+    if not tribes:
+        return jsonify(season_not_found), 400
+    
+    json_body = []
+
+    for tribe in tribes:
+        json_body.append({
+            "tribe_name": tribe.tribe_name,
+            "tribe_type": tribe.tribe_type,
+            "season": tribe.season,
+            "challenge_wins": tribe.challenge_wins
+        })
+
+    return jsonify(json_body), 200
 
 @app.route("/seasons/locations", methods=["GET"])
 def get_all_locations():
     '''
-    Purpose:
+    Purpose: 
+        Gets all of the survivor locations for each season.
     Input Parameter(s):
+        None
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    seasons = Seasons.query.all()
+    json_body = []
+
+    for season in seasons:
+        json_body.append({
+            "season_number": season.season_number,
+            "location": season.location
+        })
+
+    return jsonify(json_body), 200
 
 @app.route("/seasons/create", methods=["POST"])
 def create_season():
     '''
     Purpose:
+        Create a new season and add it to the database.
     Input Parameter(s):
+        None
     Return Value:
+        Successful creation message.
     '''
-    pass
+    data = request.get_json()
+
+    new_season = Seasons(
+        name = data["name"],
+        location = data["location"],
+        start_date = date(data["year"], data["start_month"], data["start_day"]),
+        end_date = date(data["year"], data["end_month"], data["end_day"]),
+        num_episodes = data["num_episodes"],
+        num_castaways = data["num_castaways"]
+    )
+    db.session.add(new_season)
+    db.session.commit()
+
+    return jsonify({"message": "season created successfully"})
 
 @app.route("/seasons/delete/<season_number>", methods=["DELETE"])
 def delete_season(season_number):
     '''
     Purpose:
+        Delete a season from the database.
     Input Parameter(s):
+        The number of the season.
     Return Value:
+        Successful deletion message.
     '''
-    pass
+    season = Seasons.query.filter_by(season_number=season_number).first()
+    if not season:
+        return jsonify(season_not_found), 400
+    
+    db.session.delete(season)
+    db.session.commit()
+
+    return jsonify({"message": "season deleted successfully"})
 
 # tribe endpoints
 
