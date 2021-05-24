@@ -4,6 +4,8 @@ castaway_not_found = {"Message" : "We couldn't find the castaway you're looking 
 
 season_not_found = {"message": "We couldn't find the season you're looking for. Please make sure it is a valid season number/name."}
 
+tribe_not_found = {"message": "We couldn't find the tribe you're looking for. Please make sure it is a valid tribe name."}
+
 def get_castaway_info(castaway):
     # This function takes a Castaway query as input. Must be a Castaway query so we can perform attribute calls.
     castaway_info = {
@@ -27,6 +29,16 @@ def get_season_info(season):
             "number_of_castaways": season.num_castaways
         }
     return season_info
+
+def get_tribe_info(tribe):
+    # This function takes a Tribe query as input. Must be a Tribe query so we can perform attribute calls.
+    tribe_info = {
+            "tribe_name": tribe.tribe_name,
+            "tribe_type": tribe.tribe_type,
+            "season": tribe.season,
+            "challenge_wins": tribe.challenge_wins
+        }
+    return tribe_info
 
 def remove_underscores(string):
     name_without_underscore = ''

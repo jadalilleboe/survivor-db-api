@@ -32,7 +32,7 @@ class SeasonCastaway(db.Model):
     castaway_id = db.Column(db.Integer, db.ForeignKey('Castaways.id'))
     placement = db.Column(db.Integer)
 
-tribe_castaway = db.Table('TribeCastaway',
+tribe_castaway = db.Table('tribe_castaway',
     db.Column('castaway_id', db.Integer, db.ForeignKey('Castaways.id')),
     db.Column('tribe_id', db.Integer, db.ForeignKey('Tribes.id'))
     )
@@ -46,7 +46,6 @@ class Castaways(db.Model):
     age_at_recording = db.Column(db.Integer)
     days_lasted = db.Column(db.Integer)
     challenge_wins = db.Column(db.Integer)
-    # seasons = db.relationship('Seasons', backref=db.backref('castaways_in_season', lazy='dynamic'))
     tribes = db.relationship('Tribes', secondary=tribe_castaway, backref=db.backref('castaways_in_tribe', lazy='dynamic'))     
 
 class Seasons(db.Model):
@@ -557,46 +556,101 @@ def delete_season(season_number):
 def get_all_tribes():
     '''
     Purpose:
+        Get data for all tribes in the database.
     Input Parameter(s):
+        None
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    tribes = Tribes.query.all()
+    json_body = []
+    for tribe in tribes:
+        json_body.append(get_tribe_info(tribe))
+
+    return jsonify(json_body), 200
 
 @app.route("/tribes/challenge_wins", methods=["GET"])
 def order_tribes_by_challenge_wins():
     '''
     Purpose:
+        Order all of the tribes by the amount of challenges they've won.
     Input Parameter(s):
+        None
     Return Value:
+        JSONified version of the data.
     '''
-    pass
+    tribes = Tribes.query.order_by(Tribes.challenge_wins).all()
+    json_body = []
+
+    for tribe in tribes:
+        if tribe.challenge_wins == 'N/A':
+            pass
+        else:
+            json_body.append({
+                "tribe_name": tribe.tribe_name,
+                "season": tribe.season,
+                "challenge_wins": tribe.challenge_wins
+            })
+    json_body.reverse()
+    
+    return jsonify(json_body), 200
 
 @app.route("/tribes/<tribe_name>", methods=["GET"])
 def get_one_tribe(tribe_name):
     '''
     Purpose:
+        Fetch data for one tribe from the database
     Input Parameter(s):
+        The name of the tribe
     Return Value:
+        JSONified version of the information
     '''
-    pass
+    tribe_name = remove_underscores(tribe_name)
+    tribe = Tribes.query.filter_by(tribe_name=tribe_name).first()
+    if not tribe:
+        return jsonify(tribe_not_found), 400
+    
+    return jsonify(get_tribe_info(tribe)), 200
 
-@app.route("/tribes/<season_number>", methods=["GET"])
+@app.route("/tribes/season/<season_number>", methods=["GET"])
 def get_all_tribes_from_a_season(season_number):
     '''
     Purpose:
+        Gets all of the tribes from a certain season.
     Input Parameter(s):
+        A season number
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    tribes = Tribes.query.filter_by(season=season_number).all()
+    if not tribes:
+        return jsonify(season_not_found), 400
+
+    json_body = []
+    
+    for tribe in tribes:
+        json_body.append(get_tribe_info(tribe))
+
+    return jsonify(json_body), 200
+        
 
 @app.route("/tribes/<tribe_name>/members", methods=["GET"])
 def get_tribe_members(tribe_name):
     '''
     Purpose:
+        Get all of the members of a tribe.
     Input Parameter(s):
+        The name of the tribe.
     Return Value:
+        JSONified version of the data.
     '''
-    pass
+    tribe_name = remove_underscores(tribe_name)
+    tribe = Tribes.query.filter_by(tribe_name=tribe_name).first()
+    if not tribe: 
+        return jsonify(tribe_not_found), 400
+    tribe_members = Castaways.query.join(tribe_castaway).join(Tribes).filter(tribe_castaway.c.tribe_id == tribe.id).all()
+
+    
 
 @app.route("/tribes/<tribe_name>/highest_placing", methods=["GET"])
 def get_highest_placing_member(tribe_name):
