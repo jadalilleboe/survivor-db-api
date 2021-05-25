@@ -3,6 +3,8 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, json, request, jsonify
+# from flask_script import Manager
+from flask_migrate import Migrate
 from datetime import date
 from api_functions import *
 
@@ -21,6 +23,8 @@ def _set_sqlite_pragma(dbapi_connection, connection_record):
         cursor.close()
 
 db = SQLAlchemy(app)
+
+migrate = Migrate(app, db)
 
 # models
 
@@ -65,7 +69,7 @@ class Tribes(db.Model):
     tribe_name = db.Column(db.String(40))
     tribe_type = db.Column(db.String(30))
     season = db.Column(db.Integer, db.ForeignKey("Seasons.season_number"))
-    challenge_wins = db.Column(db.String(10))
+    challenge_wins = db.Column(db.Integer)
 
 # castaway endpoints
 
@@ -583,21 +587,13 @@ def order_tribes_by_challenge_wins():
     json_body = []
 
     for tribe in tribes:
-        if tribe.challenge_wins == 'N/A':
+        if tribe.challenge_wins == None:
             pass
         else:
-            if len(json_body) >= 1 and (int(tribe.challenge_wins) > int(json_body[0]["challenge_wins"])):
-                json_body.insert(, {
-                "tribe_name": tribe.tribe_name,
-                "season": tribe.season,
+            json_body.append({
+                "tribe": tribe.tribe_name,
                 "challenge_wins": tribe.challenge_wins
             })
-            else:
-                json_body.append({
-                    "tribe_name": tribe.tribe_name,
-                    "season": tribe.season,
-                    "challenge_wins": tribe.challenge_wins
-                })
     json_body.reverse()
     
     return jsonify(json_body), 200
@@ -747,4 +743,5 @@ def delete_tribe(tribe_name):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
+    
