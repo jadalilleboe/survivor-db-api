@@ -2,7 +2,7 @@ from sqlite3 import Connection as SQLite3Connection
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, request, jsonify
+from flask import Flask, json, request, jsonify
 from datetime import date
 from api_functions import *
 
@@ -32,7 +32,7 @@ class SeasonCastaway(db.Model):
     castaway_id = db.Column(db.Integer, db.ForeignKey('Castaways.id'))
     placement = db.Column(db.Integer)
 
-tribe_castaway = db.Table('tribe_castaway',
+TribeCastaway = db.Table('TribeCastaway',
     db.Column('castaway_id', db.Integer, db.ForeignKey('Castaways.id')),
     db.Column('tribe_id', db.Integer, db.ForeignKey('Tribes.id'))
     )
@@ -46,7 +46,7 @@ class Castaways(db.Model):
     age_at_recording = db.Column(db.Integer)
     days_lasted = db.Column(db.Integer)
     challenge_wins = db.Column(db.Integer)
-    tribes = db.relationship('Tribes', secondary=tribe_castaway, backref=db.backref('castaways_in_tribe', lazy='dynamic'))     
+    tribes = db.relationship('Tribes', secondary=TribeCastaway, backref=db.backref('castaways_in_tribe', lazy='dynamic'))     
 
 class Seasons(db.Model):
     __tablename__ = "Seasons"
@@ -586,11 +586,18 @@ def order_tribes_by_challenge_wins():
         if tribe.challenge_wins == 'N/A':
             pass
         else:
-            json_body.append({
+            if len(json_body) >= 1 and (int(tribe.challenge_wins) > int(json_body[0]["challenge_wins"])):
+                json_body.insert(, {
                 "tribe_name": tribe.tribe_name,
                 "season": tribe.season,
                 "challenge_wins": tribe.challenge_wins
             })
+            else:
+                json_body.append({
+                    "tribe_name": tribe.tribe_name,
+                    "season": tribe.season,
+                    "challenge_wins": tribe.challenge_wins
+                })
     json_body.reverse()
     
     return jsonify(json_body), 200
@@ -633,7 +640,6 @@ def get_all_tribes_from_a_season(season_number):
 
     return jsonify(json_body), 200
         
-
 @app.route("/tribes/<tribe_name>/members", methods=["GET"])
 def get_tribe_members(tribe_name):
     '''
@@ -648,36 +654,92 @@ def get_tribe_members(tribe_name):
     tribe = Tribes.query.filter_by(tribe_name=tribe_name).first()
     if not tribe: 
         return jsonify(tribe_not_found), 400
-    tribe_members = Castaways.query.join(tribe_castaway).join(Tribes).filter(tribe_castaway.c.tribe_id == tribe.id).all()
+    tribe_members = Castaways.query.join(TribeCastaway).join(Tribes).filter(TribeCastaway.c.tribe_id == tribe.id).all()
 
+    json_body = []
+
+    for member in tribe_members:
+        json_body.append({
+            "name": member.name,
+            "tribe": tribe.tribe_name,
+            "season": tribe.season
+        })
     
+    return jsonify(json_body), 200
 
 @app.route("/tribes/<tribe_name>/highest_placing", methods=["GET"])
 def get_highest_placing_member(tribe_name):
     '''
     Purpose:
+        Get the highest placing member of the given tribe. (Member who stayed in the game the longest)
     Input Parameter(s):
+        The name of the tribe
     Return Value:
+        JSONified version of the data
     '''
-    pass
+    tribe_name = remove_underscores(tribe_name)
+    tribe = Tribes.query.filter_by(tribe_name=tribe_name).first()
+    if not tribe:
+        return jsonify(tribe_not_found), 400
+    tribe_members = Castaways.query.join(TribeCastaway).join(Tribes).filter(TribeCastaway.c.tribe_id == tribe.id).all()
+    highest_placement = 30
+    highest_placing = ''
+    
+
+    for member in tribe_members:
+        members_placement = SeasonCastaway.query.filter_by(season_number=tribe.season).filter_by(castaway_id=member.id).first()
+        if int(members_placement.placement) < highest_placement:
+            highest_placement = int(members_placement.placement)
+            highest_placing = member
+
+
+    return jsonify({
+        "name": highest_placing.name,
+        "tribe": tribe_name,
+        "placement": highest_placement
+    }), 200
 
 @app.route("/tribes/create", methods=["POST"])
 def create_tribe():
     '''
     Purpose:
+        Create a new tribe and add it to the database.
     Input Parameter(s):
+        None.
     Return Value:
+        Successful creation message
     '''
-    pass
+    data = request.get_json()
+    new_tribe = Tribes(
+        tribe_name=data["tribe_name"],
+        tribe_type=data["tribe_type"],
+        season = data["season"],
+        challenge_wins = data["challenge_wins"]
+    )
+    db.session.add(new_tribe)
+    db.session.commit()
 
-@app.route("/tribes/delete/<tribe_name>", methods=["GET"])
+    return jsonify({"message": "tribe created successfully"}), 200
+    
+@app.route("/tribes/delete/<tribe_name>", methods=["DELETE"])
 def delete_tribe(tribe_name):
     '''
     Purpose:
+        Delete a tribe from the database.
     Input Parameter(s):
+        The name of the tribe to be deleted.
     Return Value:
+        Successful deletion message.
     '''
-    pass
+    tribe_name = remove_underscores(tribe_name)
+    tribe = Tribes.query.filter_by(tribe_name=tribe_name).first()
+    if not tribe:
+        return jsonify(tribe_not_found), 400
+    
+    db.session.delete(tribe)
+    db.session.commit()
+
+    return jsonify({"message": "tribe deleted successflly"}), 200
 
 
 
