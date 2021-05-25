@@ -3,7 +3,6 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, json, request, jsonify
-# from flask_script import Manager
 from flask_migrate import Migrate
 from datetime import date
 from api_functions import *
@@ -254,7 +253,7 @@ def castaways_ordered_by_ascending_age():
     
     return jsonify(json_body), 200
 
-@app.route("/castways/age/descending", methods=["GET"])
+@app.route("/castaways/age/descending", methods=["GET"])
 def castaways_ordered_by_descending_age():
     '''
     Purpose:

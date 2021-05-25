@@ -251,10 +251,10 @@ def get_tribe_info():
                 survivor_tribe.castaways_in_tribe.append(member)
                 db.session.commit()
 
-# get_survivors()
-# get_seasons()
+get_survivors()
+get_seasons()
 get_season_castaway()
 get_season40_castaways()
-# get_tribe_info()
+get_tribe_info()
 
 driver.quit()
