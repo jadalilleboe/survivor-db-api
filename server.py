@@ -347,6 +347,25 @@ def delete_castaway(castaway_name):
 
     return jsonify({"message": "castaway deleted successfully"})
 
+@app.route("/castaways/update", methods=["PATCH"])
+def update_castaway_statistics():
+    '''
+    Purpose:
+        Update a returning player's statistics of days lasted and challenges won.
+    Input Parameter:
+        None
+    Return Values:
+        Successful update message
+    '''
+    data = request.get_json()
+    castaway = Castaways.query.filter_by(name=data["name"]).first()
+    castaway.days_lasted += data["days_lasted"]
+    print(castaway.days_lasted)
+    castaway.challenge_wins += data["challenge_wins"]
+    db.session.commit()
+
+    return jsonify({"message": "the castaway's statistics have been updated successfully"})
+
 # season endpoints
 
 @app.route("/seasons", methods=["GET"])
